@@ -18,6 +18,10 @@ cand1 <- miami_2nd_night_text %>%
 tidy_cand1 <- cand1 %>%
   unnest_tokens(word, text)
 
+# try a bigram instead?
+temp <- cand1 %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+
 # remove stop words
 data(stop_words)
 
