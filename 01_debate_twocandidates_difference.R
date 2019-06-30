@@ -10,7 +10,7 @@ miami_2nd_night_text <- read_csv("miami_2nd_night_text.csv")
 
 # select only one candidate as first candidate
 cand1 <- miami_2nd_night_text %>%
-  filter(speaker == "SANDERS") %>% 
+  filter(speaker == "HARRIS") %>% 
   select(speaker, text)
 
 
@@ -77,7 +77,7 @@ frequency <- raw_frequency %>%
 # plot relative frequencies -----------------------------------------------
 library(scales)
 
-freq_plot <- ggplot(frequency, aes(BIDEN, SANDERS)) +
+freq_plot <- ggplot(frequency, aes(HARRIS, BIDEN)) +
   geom_jitter(alpha = 0.1, size = 2.5, width = 0.25, height = 0.25) +
   geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
   scale_x_log10(labels = percent_format()) +
@@ -85,7 +85,7 @@ freq_plot <- ggplot(frequency, aes(BIDEN, SANDERS)) +
   geom_abline(color = "red") +
   hrbrthemes::theme_ipsum_rc() +
   labs(title = "Word frequencies in Democratic Debate",
-       subtitle = "Sanders vs. Biden",
+       subtitle = "Harris vs. Biden",
        caption = "by akessler")
 
 freq_plot
