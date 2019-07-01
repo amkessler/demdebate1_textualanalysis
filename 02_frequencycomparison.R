@@ -13,14 +13,16 @@ miami_2nd_night_text <- read_csv("miami_2nd_night_text.csv")
 selectedcols <- miami_2nd_night_text %>%
   select(speaker, text)
 
-#select candidates to include...
+#exclude moderators
 selectedcols <- selectedcols %>% 
-  filter(speaker %in% c("GILLIBRAND",
-                        "YANG",
-                        "SANDERS",
-                        "BUTTIGIEG",
-                        "HARRIS",
-                        "BIDEN"))
+  filter(!speaker %in% c("ANNOUNCER",
+                        "DIAZ-BALART",
+                        "GUTHRIE",
+                        "HOLT",
+                        "TODD",
+                        "MADDOW"))
+
+
 
 #begin the text analysis ---------------------------------------------
 
@@ -49,45 +51,6 @@ speaker_words <- speaker_words %>%
 
 
 
-#graph result
-ggplot(speaker_words, aes(n/total, fill = speaker)) +
-  geom_histogram(show.legend = FALSE) +
-  xlim(NA, 0.0009) +
-  facet_wrap(~speaker, ncol = 2, scales = "free_y")
-
-
-#zipf's law
-freq_by_rank <- speaker_words %>% 
-  group_by(speaker) %>% 
-  mutate(rank = row_number(), 
-         `term frequency` = n/total)
-
-freq_by_rank
-
-#plot
-freq_by_rank %>% 
-  ggplot(aes(rank, `term frequency`, color = speaker)) + 
-  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
-  scale_x_log10() +
-  scale_y_log10()
-
-#broken power law
-rank_subset <- freq_by_rank %>% 
-  filter(rank < 500,
-         rank > 10)
-
-lm(log10(`term frequency`) ~ log10(rank), data = rank_subset)
-
-freq_by_rank %>% 
-  ggplot(aes(rank, `term frequency`, color = speaker)) + 
-  geom_abline(intercept = -0.62, slope = -1.1, color = "gray50", linetype = 2) +
-  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
-  scale_x_log10() +
-  scale_y_log10()
-
-
-
-
 ### NOW WE'LL DO TF-IDF ---------------------------------------------
 
 speaker_words <- speaker_words %>%
@@ -95,11 +58,11 @@ speaker_words <- speaker_words %>%
 
 speaker_words
 
-# Notice that idf and thus tf-idf are zero for these extremely common words. These are all words that appear in all six of 
-# Jane Austen’s novels, so the idf term (which will then be the natural log of 1) is zero. The inverse document frequency 
-# (and thus tf-idf) is very low (near zero) for words that occur in many of the documents in a collection; this is how 
-# this approach decreases the weight for common words. The inverse document frequency will be a higher number for words 
-# that occur in fewer of the documents in the collection.
+# Notice that idf and thus tf-idf are zero for these extremely common words, so the idf term (which will then be the
+# natural log of 1) is zero. The inverse document frequency (and thus tf-idf) is very low (near zero) for words that 
+# occur in many of the documents in a collection; this is how this approach decreases the weight for common words. 
+# The inverse document frequency will be a higher number for words that occur in fewer of the documents in the 
+# collection.
 
 speaker_words %>%
   select(-total) %>%
@@ -113,6 +76,10 @@ speaker_tfidf_chart <- speaker_words %>%
   group_by(speaker) %>% 
   top_n(10) %>% 
   ungroup() %>%
+  filter(speaker %in% c("BIDEN",
+                        "GILLIBRAND",
+                        "YANG",
+                        "HARRIS")) %>% 
   ggplot(aes(word, tf_idf, fill = speaker)) +
   geom_col(show.legend = FALSE) +
   labs(x = NULL, y = "tf-idf") +
@@ -122,6 +89,41 @@ speaker_tfidf_chart <- speaker_words %>%
 speaker_tfidf_chart
 
 ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
+
+
+### troubleshooting why more than 10? Breaking up into steps
+ztest <- speaker_words %>%
+  mutate(word = factor(word, levels = rev(unique(word)))) %>% 
+  group_by(speaker) %>% 
+  top_n(10, wt = tf_idf) %>%
+  arrange(speaker, desc(tf_idf)) %>% 
+  ungroup() 
+
+ztest %>% 
+  count(speaker)
+
+## Appears that there ARE TIES in the tf_idf score causing this
+
+#limit number of candidates
+ztest <- ztest %>% 
+  filter(speaker %in% c("BIDEN",
+                         "GILLIBRAND",
+                         "YANG",
+                         "HARRIS"))
+
+ztest_chart <- ztest %>% 
+  ggplot(aes(word, tf_idf, fill = speaker)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = NULL, y = "tf-idf") +
+  facet_wrap(~speaker, ncol = 2, scales = "free") +
+  coord_flip()
+
+ztest_chart
+
+
+
+
+
 
 
 ### BI-GRAMS INSTEAD -------------------------------
@@ -170,19 +172,39 @@ speaker_bigrams %>%
   arrange(desc(tf_idf)) 
 
 #visualizing 
-speaker_tfidf_chart_bigrams <- speaker_bigrams %>%
+
+speaker_tfidf_top <- speaker_bigrams %>%
   arrange(desc(tf_idf)) %>%
   mutate(bigram = factor(bigram, levels = rev(unique(bigram)))) %>% 
   group_by(speaker) %>% 
   top_n(10) %>% 
-  ungroup() %>%
+  ungroup() 
+
+speaker_tfidf_top %>% 
+  count(speaker)
+
+## Appears that there ARE TIES in the tf_idf score causing weirdness.
+#we'll limit to just candidated with around 10 for now (*come back to this*)
+
+#limit number of candidates
+speaker_tfidf_top <- speaker_tfidf_top %>% 
+  filter(speaker %in% c("BENNET",
+                        "BIDEN",
+                        "BUTTIGIEG",
+                        "HARRIS",
+                        "SANDERS",
+                        "WILLIAMSON"))
+  
+  
+  
+speaker_tfidf_chart_bigrams <- speaker_tfidf_top %>% 
   ggplot(aes(bigram, tf_idf, fill = speaker)) +
   geom_col(show.legend = FALSE) +
   labs(x = NULL, y = "tf-idf") +
   facet_wrap(~speaker, ncol = 2, scales = "free") +
   coord_flip() 
 
-speaker_tfidf_chart_bigrams + theme(legend.position="none")
+# speaker_tfidf_chart_bigrams + theme(legend.position="none")
 
 #save chart images to file
 ggsave("img/speaker_tfidf_chart_bigrams.jpg", speaker_tfidf_chart_bigrams)
