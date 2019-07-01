@@ -95,7 +95,7 @@ speaker_tfidf_chart <- speaker_words_selectedcands %>%
 speaker_tfidf_chart 
 
 ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
-
+ggsave("img/speaker_tfidf_chart.pdf", speaker_tfidf_chart)
 
 
 
