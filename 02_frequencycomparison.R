@@ -32,15 +32,12 @@ mycands <- c("GILLIBRAND",
   "WILLIAMSON")
 
 
+
 #begin the text analysis ---------------------------------------------
 
 speaker_words <- selectedcols %>%
   unnest_tokens(word, text) %>%
   count(speaker, word, sort = TRUE)
-
-# # to try a bigram instead?
-# temp <- cand1 %>%
-#   unnest_tokens(bigram, text, token = "ngrams", n = 2)
 
 total_words <- speaker_words %>% 
   group_by(speaker) %>% 
@@ -76,11 +73,7 @@ speaker_words %>%
   select(-total) %>%
   arrange(desc(tf_idf))
 
-
-
-
-speaker_words_selectedcands <- speaker_words 
-
+#filter for only certain candidates
 speaker_words_selectedcands <- speaker_words %>% 
   filter(speaker %in% mycands) 
 
@@ -106,39 +99,10 @@ speaker_tfidf_chart
 ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
 
 
-### troubleshooting why more than 10? Breaking up into steps
-ztest <- speaker_words %>%
-  mutate(word = factor(word, levels = rev(unique(word)))) %>% 
-  group_by(speaker) %>% 
-  top_n(10, wt = tf_idf) %>%
-  arrange(speaker, desc(tf_idf)) %>% 
-  ungroup() 
-
-ztest %>% 
-  count(speaker)
-
-## Appears that there ARE TIES in the tf_idf score causing this
-
-#limit number of candidates
-ztest <- ztest %>% 
-  filter(speaker %in% mycands)
-
-ztest_chart <- ztest %>% 
-  ggplot(aes(word, tf_idf, fill = speaker)) +
-  geom_col(show.legend = FALSE) +
-  labs(x = NULL, y = "tf-idf") +
-  facet_wrap(~speaker, ncol = 2, scales = "free") +
-  coord_flip()
-
-ztest_chart
 
 
 
-
-
-
-
-### BI-GRAMS INSTEAD -------------------------------
+### NOW BI-GRAMS VERSION -------------------------------
 
 speaker_bigrams <- selectedcols %>%
   unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
@@ -152,13 +116,15 @@ speaker_bigrams <- left_join(speaker_bigrams, total_words)
 
 speaker_bigrams
 
-#remove records with stop words as either of the two words
+#remove stop words as either of the two words
 bigrams_separated <- speaker_bigrams %>%
   separate(bigram, c("word1", "word2"), sep = " ")
 
 bigrams_filtered <- bigrams_separated %>%
   filter(!word1 %in% stop_words$word) %>%
-  filter(!word2 %in% stop_words$word)
+  filter(!word2 %in% stop_words$word) %>% 
+  filter(!str_detect(word1, "[0-9]")) %>% 
+  filter(!str_detect(word2, "[0-9]")) # remove numbers# remove numbers
 
 # new bigram counts:
 bigram_counts <- bigrams_filtered %>% 
@@ -199,9 +165,7 @@ speaker_tfidf_top %>%
 #limit number of candidates
 speaker_tfidf_top <- speaker_tfidf_top %>% 
   filter(speaker %in% mycands)
-  
-  
-  
+
 speaker_tfidf_chart_bigrams <- speaker_tfidf_top %>% 
   ggplot(aes(bigram, tf_idf, fill = speaker)) +
   geom_col(show.legend = FALSE) +
