@@ -182,7 +182,7 @@ speaker_tfidf_chart_bigrams <- speaker_bigrams %>%
   facet_wrap(~speaker, ncol = 2, scales = "free") +
   coord_flip() 
 
-ggplotly(speaker_tfidf_chart_bigrams)
+speaker_tfidf_chart_bigrams + theme(legend.position="none")
 
 #save chart images to file
 ggsave("img/speaker_tfidf_chart_bigrams.jpg", speaker_tfidf_chart_bigrams)
