@@ -1,4 +1,4 @@
-### DOING SOME TF-IDF ANALYSIS OF DEMOCRATIC DEBATE ####
+### DOING TF-IDF ANALYSIS OF DEMOCRATIC DEBATE ####
 
 # libraries ---------------------------------------------------------------
 library(tidyverse)
@@ -6,6 +6,7 @@ library(ggpage)
 library(tidytext)
 library(stringr)
 library(plotly)
+
 
 # read in transcript ---------------------------------------------
 miami_2nd_night_text <- read_csv("miami_2nd_night_text.csv")
@@ -56,7 +57,7 @@ speaker_words <- speaker_words %>%
 
 
 
-### NOW WE'LL DO TF-IDF ---------------------------------------------
+### NOW WE'LL DO THE TF-IDF ---------------------------------------------
 
 speaker_words <- speaker_words %>%
   bind_tf_idf(word, speaker, n)
@@ -77,7 +78,6 @@ speaker_words %>%
 speaker_words_selectedcands <- speaker_words %>% 
   filter(speaker %in% mycands) 
 
-
 #visualizing 
 speaker_tfidf_chart <- speaker_words_selectedcands %>%
   arrange(desc(tf_idf)) %>%
@@ -94,10 +94,7 @@ speaker_tfidf_chart <- speaker_words_selectedcands %>%
 
 speaker_tfidf_chart 
 
-
-
 ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
-
 
 
 
@@ -135,6 +132,7 @@ bigrams_united <- bigrams_filtered %>%
 
 bigrams_united
 
+#saved back to original name
 speaker_bigrams <- bigrams_united
 
 
@@ -150,7 +148,6 @@ speaker_bigrams %>%
   arrange(desc(tf_idf)) 
 
 #visualizing 
-
 speaker_tfidf_top <- speaker_bigrams %>%
   arrange(desc(tf_idf)) %>%
   mutate(bigram = factor(bigram, levels = rev(unique(bigram)))) %>% 
@@ -159,6 +156,7 @@ speaker_tfidf_top <- speaker_bigrams %>%
   slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
   ungroup() 
 
+#check count per speaker
 speaker_tfidf_top %>% 
   count(speaker)
 
