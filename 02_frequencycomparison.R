@@ -14,10 +14,25 @@ miami_2nd_night_text <- read_csv("miami_2nd_night_text.csv")
 selectedcols <- miami_2nd_night_text %>%
   select(speaker, text)
 
+#select candidates to include...
+selectedcols <- selectedcols %>% 
+  filter(speaker %in% c("GILLIBRAND",
+                        "YANG",
+                        "SANDERS",
+                        "BUTTIGIEG",
+                        "HARRIS",
+                        "BIDEN"))
+
+
+#begin the text analysis ---------------------------------------------
 
 speaker_words <- selectedcols %>%
   unnest_tokens(word, text) %>%
   count(speaker, word, sort = TRUE)
+
+# # to try a bigram instead?
+# temp <- cand1 %>%
+#   unnest_tokens(bigram, text, token = "ngrams", n = 2)
 
 total_words <- speaker_words %>% 
   group_by(speaker) %>% 
@@ -26,6 +41,14 @@ total_words <- speaker_words %>%
 speaker_words <- left_join(speaker_words, total_words)
 
 speaker_words
+
+# remove stop words
+data(stop_words)
+
+speaker_words <- speaker_words %>%
+  anti_join(stop_words) %>% 
+  filter(!str_detect(word, "[0-9]")) # remove numbers
+
 
 
 #graph result
@@ -66,7 +89,9 @@ freq_by_rank %>%
 
 
 
-### NOW WE'LL DO TF-IDF #####
+
+### NOW WE'LL DO TF-IDF ---------------------------------------------
+
 speaker_words <- speaker_words %>%
   bind_tf_idf(word, speaker, n)
 
@@ -99,3 +124,64 @@ speaker_tfidf_chart <- speaker_words %>%
 speaker_tfidf_chart
 
 ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
+
+
+### BI-GRAMS INSTEAD -------------------------------
+
+speaker_bigrams <- selectedcols %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  count(speaker, bigram, sort = TRUE)
+
+total_words <- speaker_bigrams %>% 
+  group_by(speaker) %>% 
+  summarize(total = sum(n))
+
+speaker_bigrams <- left_join(speaker_bigrams, total_words)
+
+speaker_bigrams
+
+# # remove stop words
+# data(stop_words)
+# 
+# speaker_bigrams <- speaker_bigrams %>%
+#   anti_join(stop_words) %>% 
+#   filter(!str_detect(word, "[0-9]")) # remove numbers
+
+
+
+#graph result
+ggplot(speaker_bigrams, aes(n/total, fill = speaker)) +
+  geom_histogram(show.legend = FALSE) +
+  xlim(NA, 0.0009) +
+  facet_wrap(~speaker, ncol = 2, scales = "free_y")
+
+
+# TF-IDF 
+
+speaker_bigrams <- speaker_bigrams %>%
+  bind_tf_idf(bigram, speaker, n)
+
+speaker_bigrams
+
+speaker_bigrams %>%
+  select(-total) %>%
+  arrange(desc(tf_idf))
+
+
+#visualizing 
+speaker_tfidf_chart_bigrams <- speaker_bigrams %>%
+  arrange(desc(tf_idf)) %>%
+  mutate(bigram = factor(bigram, levels = rev(unique(bigram)))) %>% 
+  group_by(speaker) %>% 
+  top_n(10) %>% 
+  ungroup() %>%
+  ggplot(aes(bigram, tf_idf, fill = speaker)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = NULL, y = "tf-idf") +
+  facet_wrap(~speaker, ncol = 2, scales = "free") +
+  coord_flip()
+
+speaker_tfidf_chart_bigrams
+
+ggsave("img/speaker_tfidf_chart_bigrams.jpg", speaker_tfidf_chart_bigrams)
+ggsave("img/speaker_tfidf_chart_bigrams.pdf", speaker_tfidf_chart_bigrams)
