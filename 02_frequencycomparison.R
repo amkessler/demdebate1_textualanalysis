@@ -9,7 +9,7 @@ library(plotly)
 
 
 # read in transcript ---------------------------------------------
-miami_2nd_night_text <- read_csv("miami_2nd_night_text.csv")
+miami_2nd_night_text <- read_csv("data/miami_2nd_night_text.csv")
 
 selectedcols <- miami_2nd_night_text %>%
   select(speaker, text)
