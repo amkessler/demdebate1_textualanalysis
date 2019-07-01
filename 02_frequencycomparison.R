@@ -23,6 +23,14 @@ selectedcols <- selectedcols %>%
                         "MADDOW"))
 
 
+#vector of selected candidates to include in final charts/analysis
+mycands <- c("GILLIBRAND",
+  "BIDEN",
+  "BUTTIGIEG",
+  "HARRIS",
+  "SANDERS",
+  "WILLIAMSON")
+
 
 #begin the text analysis ---------------------------------------------
 
@@ -69,24 +77,31 @@ speaker_words %>%
   arrange(desc(tf_idf))
 
 
+
+
+speaker_words_selectedcands <- speaker_words 
+
+speaker_words_selectedcands <- speaker_words %>% 
+  filter(speaker %in% mycands) 
+
+
 #visualizing 
-speaker_tfidf_chart <- speaker_words %>%
+speaker_tfidf_chart <- speaker_words_selectedcands %>%
   arrange(desc(tf_idf)) %>%
   mutate(word = factor(word, levels = rev(unique(word)))) %>% 
   group_by(speaker) %>% 
   top_n(10) %>% 
+  slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
   ungroup() %>%
-  filter(speaker %in% c("BIDEN",
-                        "GILLIBRAND",
-                        "YANG",
-                        "HARRIS")) %>% 
   ggplot(aes(word, tf_idf, fill = speaker)) +
   geom_col(show.legend = FALSE) +
   labs(x = NULL, y = "tf-idf") +
   facet_wrap(~speaker, ncol = 2, scales = "free") +
   coord_flip()
 
-speaker_tfidf_chart
+speaker_tfidf_chart 
+
+
 
 ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
 
@@ -106,10 +121,7 @@ ztest %>%
 
 #limit number of candidates
 ztest <- ztest %>% 
-  filter(speaker %in% c("BIDEN",
-                         "GILLIBRAND",
-                         "YANG",
-                         "HARRIS"))
+  filter(speaker %in% mycands)
 
 ztest_chart <- ztest %>% 
   ggplot(aes(word, tf_idf, fill = speaker)) +
@@ -178,22 +190,15 @@ speaker_tfidf_top <- speaker_bigrams %>%
   mutate(bigram = factor(bigram, levels = rev(unique(bigram)))) %>% 
   group_by(speaker) %>% 
   top_n(10) %>% 
+  slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
   ungroup() 
 
 speaker_tfidf_top %>% 
   count(speaker)
 
-## Appears that there ARE TIES in the tf_idf score causing weirdness.
-#we'll limit to just candidated with around 10 for now (*come back to this*)
-
 #limit number of candidates
 speaker_tfidf_top <- speaker_tfidf_top %>% 
-  filter(speaker %in% c("BENNET",
-                        "BIDEN",
-                        "BUTTIGIEG",
-                        "HARRIS",
-                        "SANDERS",
-                        "WILLIAMSON"))
+  filter(speaker %in% mycands)
   
   
   
@@ -204,7 +209,7 @@ speaker_tfidf_chart_bigrams <- speaker_tfidf_top %>%
   facet_wrap(~speaker, ncol = 2, scales = "free") +
   coord_flip() 
 
-# speaker_tfidf_chart_bigrams + theme(legend.position="none")
+speaker_tfidf_chart_bigrams 
 
 #save chart images to file
 ggsave("img/speaker_tfidf_chart_bigrams.jpg", speaker_tfidf_chart_bigrams)
