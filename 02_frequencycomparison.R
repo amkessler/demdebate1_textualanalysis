@@ -1,5 +1,3 @@
-# https://www.tidytextmining.com/tfidf.html
-
 ### DOING SOME TF-IDF ANALYSIS OF DEMOCRATIC DEBATE ####
 
 # libraries ---------------------------------------------------------------
@@ -7,6 +5,7 @@ library(tidyverse)
 library(ggpage)
 library(tidytext)
 library(stringr)
+library(plotly)
 
 # read in transcript ---------------------------------------------
 miami_2nd_night_text <- read_csv("miami_2nd_night_text.csv")
@@ -22,7 +21,6 @@ selectedcols <- selectedcols %>%
                         "BUTTIGIEG",
                         "HARRIS",
                         "BIDEN"))
-
 
 #begin the text analysis ---------------------------------------------
 
@@ -140,20 +138,24 @@ speaker_bigrams <- left_join(speaker_bigrams, total_words)
 
 speaker_bigrams
 
-# # remove stop words
-# data(stop_words)
-# 
-# speaker_bigrams <- speaker_bigrams %>%
-#   anti_join(stop_words) %>% 
-#   filter(!str_detect(word, "[0-9]")) # remove numbers
+#remove records with stop words as either of the two words
+bigrams_separated <- speaker_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
 
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
 
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  count(speaker, word1, word2, sort = TRUE)
 
-#graph result
-ggplot(speaker_bigrams, aes(n/total, fill = speaker)) +
-  geom_histogram(show.legend = FALSE) +
-  xlim(NA, 0.0009) +
-  facet_wrap(~speaker, ncol = 2, scales = "free_y")
+bigrams_united <- bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+bigrams_united
+
+speaker_bigrams <- bigrams_united
 
 
 # TF-IDF 
@@ -165,8 +167,7 @@ speaker_bigrams
 
 speaker_bigrams %>%
   select(-total) %>%
-  arrange(desc(tf_idf))
-
+  arrange(desc(tf_idf)) 
 
 #visualizing 
 speaker_tfidf_chart_bigrams <- speaker_bigrams %>%
@@ -179,9 +180,10 @@ speaker_tfidf_chart_bigrams <- speaker_bigrams %>%
   geom_col(show.legend = FALSE) +
   labs(x = NULL, y = "tf-idf") +
   facet_wrap(~speaker, ncol = 2, scales = "free") +
-  coord_flip()
+  coord_flip() 
 
-speaker_tfidf_chart_bigrams
+ggplotly(speaker_tfidf_chart_bigrams)
 
+#save chart images to file
 ggsave("img/speaker_tfidf_chart_bigrams.jpg", speaker_tfidf_chart_bigrams)
 ggsave("img/speaker_tfidf_chart_bigrams.pdf", speaker_tfidf_chart_bigrams)
