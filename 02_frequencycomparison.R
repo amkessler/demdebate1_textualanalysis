@@ -119,8 +119,6 @@ ggsave("img/speaker_tfidf_chart.pdf", speaker_tfidf_chart)
 
 
 
-
-
 ### NOW BI-GRAMS VERSION -------------------------------
 
 speaker_bigrams <- selectedcols %>%
@@ -169,29 +167,26 @@ speaker_bigrams %>%
   select(-total) %>%
   arrange(desc(tf_idf)) 
 
-#visualizing 
-speaker_tfidf_top <- speaker_bigrams %>%
-  arrange(desc(tf_idf)) %>%
-  mutate(bigram = factor(bigram, levels = rev(unique(bigram)))) %>% 
-  group_by(speaker) %>% 
-  top_n(10) %>% 
-  slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
-  ungroup() 
-
-#check count per speaker
-speaker_tfidf_top %>% 
-  count(speaker)
-
 #limit number of candidates
-speaker_tfidf_top <- speaker_tfidf_top %>% 
+speaker_bigrams_selectedcands <- speaker_bigrams %>% 
   filter(speaker %in% mycands)
 
-speaker_tfidf_chart_bigrams <- speaker_tfidf_top %>% 
+
+#visualizing bi-grams ####
+speaker_tfidf_chart_bigrams <- speaker_bigrams_selectedcands %>%
+  group_by(speaker) %>%
+  top_n(10) %>%
+  slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
+  ungroup %>%
+  mutate(speaker = as.factor(speaker),
+         bigram = reorder_within(bigram, tf_idf, speaker)) %>% #use the new reorder_within() func
   ggplot(aes(bigram, tf_idf, fill = speaker)) +
   geom_col(show.legend = FALSE) +
   labs(x = NULL, y = "tf-idf") +
   facet_wrap(~speaker, ncol = 2, scales = "free") +
-  coord_flip() 
+  coord_flip() +
+  scale_x_reordered() # +
+# scale_y_continuous(expand = c(0,0))
 
 speaker_tfidf_chart_bigrams 
 
