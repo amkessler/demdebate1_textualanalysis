@@ -20,15 +20,12 @@ selectedcols %>%
   count(speaker)
 
 
-
-
 #exclude moderators
 selectedcols <- selectedcols %>% 
   filter(!speaker %in% c("ANNOUNCER",
                         "BASH",
                         "LEMON",
-                        "TAPPER",
-                        "TODD"))
+                        "TAPPER"))
 
 
 #vector of selected candidates to include in final charts/analysis
@@ -63,76 +60,20 @@ speaker_words <- speaker_words %>%
   filter(!str_detect(word, "[0-9]")) # remove numbers
 
 
-
-### NOW WE'LL DO THE TF-IDF ---------------------------------------------
-
-speaker_words <- speaker_words %>%
-  bind_tf_idf(word, speaker, n)
-
-speaker_words
-
-# idf and thus tf-idf are zero for these extremely common words, so the idf term (which will then be the
-# natural log of 1) is zero. The inverse document frequency (and thus tf-idf) is very low (near zero) for words that 
-# occur in many of the documents in a collection; this is how this approach decreases the weight for common words. 
-# The inverse document frequency will be a higher number for words that occur in fewer of the documents in the 
-# collection.
-
-speaker_words %>%
-  select(-total) %>%
-  arrange(desc(tf_idf))
-
-
 #pull top ones for each speaker into table
-top_tfidf_per_speaker <- speaker_words %>%
+top_word_per_speaker <- speaker_words %>%
+  select(-total) %>% 
   group_by(speaker) %>%
   top_n(15) %>%
   slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
   ungroup
 
 #save to file
-write_csv(top_tfidf_per_speaker, "output/tfidf_singleword_percandidate.csv")
+write_csv(top_word_per_speaker, "output/top_singleword_percandidate.csv")
 
 
-# #filter for only certain candidates
-# speaker_words_selectedcands <- speaker_words #%>% 
-#   filter(speaker %in% mycands) 
-
-#visualizing 
-speaker_tfidf_chart <- speaker_words %>%
-  group_by(speaker) %>%
-  top_n(15) %>%
-  slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
-  ungroup %>%
-  mutate(speaker = as.factor(speaker),
-         word = reorder_within(word, tf_idf, speaker)) %>% #use the new reorder_within() func
-  ggplot(aes(word, tf_idf, fill = speaker)) +
-  geom_col(show.legend = FALSE) +
-  labs(x = NULL, y = "tf-idf") +
-  facet_wrap(~speaker, ncol = 2, scales = "free") +
-  coord_flip() +
-  scale_x_reordered() # +
-  # scale_y_continuous(expand = c(0,0))
-
-#OLD version
-# speaker_tfidf_chart <- speaker_words_selectedcands %>%
-#   arrange(desc(tf_idf)) %>%
-#   mutate(word = factor(word, levels = rev(unique(word)))) %>% 
-#   group_by(speaker) %>% 
-#   top_n(10) %>% 
-#   slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
-#   ungroup() %>%
-#   ggplot(aes(word, tf_idf, fill = speaker)) +
-#   geom_col(show.legend = FALSE) +
-#   labs(x = NULL, y = "tf-idf") +
-#   facet_wrap(~speaker, ncol = 2, scales = "free") +
-#   coord_flip()
-
-speaker_tfidf_chart 
-
-ggsave("img/detroit1_speaker_tfidf_chart.jpg", speaker_tfidf_chart)
-ggsave("img/detroit1_speaker_tfidf_chart.pdf", speaker_tfidf_chart)
-
-
+speaker_words %>% 
+  filter(word == "trump")
 
 
 ### NOW BI-GRAMS VERSION -------------------------------
@@ -172,31 +113,21 @@ bigrams_united
 speaker_bigrams <- bigrams_united
 
 
-# TF-IDF #### ---
-
-speaker_bigrams_tfidf <- speaker_bigrams %>%
-  bind_tf_idf(bigram, speaker, n)
-
-speaker_bigrams_tfidf
-
-speaker_bigrams_tfidf %>%
-  select(-total) %>%
-  arrange(desc(tf_idf)) 
-
-#limit number of candidates
-# speaker_bigrams_selectedcands <- speaker_bigrams_tfidf %>% 
-#   filter(speaker %in% mycands)
-
 #pull top ones for each speaker into table
-top_tfidf_per_speaker_bigrams <- speaker_bigrams_tfidf %>%
+top_bigrams_per_speaker <- speaker_bigrams %>%
   group_by(speaker) %>%
   top_n(15) %>%
   slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
   ungroup
 
 #save to file
-write_csv(top_tfidf_per_speaker_bigrams, "output/tfidf_bigrams_percandidate.csv")
+write_csv(top_bigrams_per_speaker, "output/top_bigrams_percandidate.csv")
 
+
+mtcars
+
+
+iris
 
 
 

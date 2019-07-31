@@ -27,8 +27,7 @@ selectedcols <- selectedcols %>%
   filter(!speaker %in% c("ANNOUNCER",
                         "BASH",
                         "LEMON",
-                        "TAPPER",
-                        "TODD"))
+                        "TAPPER"))
 
 
 #vector of selected candidates to include in final charts/analysis
