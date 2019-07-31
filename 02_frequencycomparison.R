@@ -9,9 +9,9 @@ library(plotly)
 
 
 # read in transcript ---------------------------------------------
-miami_2nd_night_text <- read_csv("data/miami_2nd_night_text.csv")
+miami_text <- read_csv("data/miami_bothnightscombined_text.csv")
 
-selectedcols <- miami_2nd_night_text %>%
+selectedcols <- miami_text %>%
   select(speaker, text)
 
 #exclude moderators
