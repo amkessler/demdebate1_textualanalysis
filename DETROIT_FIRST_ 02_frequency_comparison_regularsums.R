@@ -1,7 +1,4 @@
-### DOING TF-IDF ANALYSIS OF CNN DEMOCRATIC DEBATE ####
-
-# notes on using tidytext's reorder_within():
-# https://juliasilge.com/blog/reorder-within/
+### DOING TEXT ANALYSIS OF CNN DEMOCRATIC DEBATE ####
 
 # libraries ---------------------------------------------------------------
 library(tidyverse)
@@ -12,28 +9,35 @@ library(plotly)
 
 
 # read in transcript ---------------------------------------------
-miami_text <- read_csv("data/detroit_1st_night_text.csv")
+detroit_text <- read_csv("data/detroit_1st_night_text.csv")
 
-selectedcols <- miami_text %>%
+selectedcols <- detroit_text %>%
   select(speaker, text)
+
+
+#list the individual speakers
+selectedcols %>% 
+  count(speaker)
+
+
+
 
 #exclude moderators
 selectedcols <- selectedcols %>% 
   filter(!speaker %in% c("ANNOUNCER",
-                        "DIAZ-BALART",
-                        "GUTHRIE",
-                        "HOLT",
-                        "TODD",
-                        "MADDOW"))
+                        "BASH",
+                        "LEMON",
+                        "TAPPER",
+                        "TODD"))
 
 
 #vector of selected candidates to include in final charts/analysis
-mycands <- c("GILLIBRAND",
-  "BIDEN",
-  "BUTTIGIEG",
-  "HARRIS",
-  "SANDERS",
-  "WILLIAMSON")
+# mycands <- c("GILLIBRAND",
+#   "BIDEN",
+#   "BUTTIGIEG",
+#   "HARRIS",
+#   "SANDERS",
+#   "WILLIAMSON")
 
 
 
@@ -77,12 +81,24 @@ speaker_words %>%
   select(-total) %>%
   arrange(desc(tf_idf))
 
-#filter for only certain candidates
-speaker_words_selectedcands <- speaker_words %>% 
-  filter(speaker %in% mycands) 
+
+#pull top ones for each speaker into table
+top_tfidf_per_speaker <- speaker_words %>%
+  group_by(speaker) %>%
+  top_n(15) %>%
+  slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
+  ungroup
+
+#save to file
+write_csv(top_tfidf_per_speaker, "output/tfidf_singleword_percandidate.csv")
+
+
+# #filter for only certain candidates
+# speaker_words_selectedcands <- speaker_words #%>% 
+#   filter(speaker %in% mycands) 
 
 #visualizing 
-speaker_tfidf_chart <- speaker_words_selectedcands %>%
+speaker_tfidf_chart <- speaker_words %>%
   group_by(speaker) %>%
   top_n(15) %>%
   slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
@@ -113,8 +129,8 @@ speaker_tfidf_chart <- speaker_words_selectedcands %>%
 
 speaker_tfidf_chart 
 
-ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
-ggsave("img/speaker_tfidf_chart.pdf", speaker_tfidf_chart)
+ggsave("img/detroit1_speaker_tfidf_chart.jpg", speaker_tfidf_chart)
+ggsave("img/detroit1_speaker_tfidf_chart.pdf", speaker_tfidf_chart)
 
 
 
@@ -156,24 +172,37 @@ bigrams_united
 speaker_bigrams <- bigrams_united
 
 
-# TF-IDF 
+# TF-IDF #### ---
 
-speaker_bigrams <- speaker_bigrams %>%
+speaker_bigrams_tfidf <- speaker_bigrams %>%
   bind_tf_idf(bigram, speaker, n)
 
-speaker_bigrams
+speaker_bigrams_tfidf
 
-speaker_bigrams %>%
+speaker_bigrams_tfidf %>%
   select(-total) %>%
   arrange(desc(tf_idf)) 
 
 #limit number of candidates
-speaker_bigrams_selectedcands <- speaker_bigrams %>% 
-  filter(speaker %in% mycands)
+# speaker_bigrams_selectedcands <- speaker_bigrams_tfidf %>% 
+#   filter(speaker %in% mycands)
+
+#pull top ones for each speaker into table
+top_tfidf_per_speaker_bigrams <- speaker_bigrams_tfidf %>%
+  group_by(speaker) %>%
+  top_n(15) %>%
+  slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
+  ungroup
+
+#save to file
+write_csv(top_tfidf_per_speaker_bigrams, "output/tfidf_bigrams_percandidate.csv")
+
+
+
 
 
 #visualizing bi-grams ####
-speaker_tfidf_chart_bigrams <- speaker_bigrams_selectedcands %>%
+speaker_tfidf_chart_bigrams <- speaker_bigrams_tfidf %>%
   group_by(speaker) %>%
   top_n(10) %>%
   slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
@@ -191,5 +220,5 @@ speaker_tfidf_chart_bigrams <- speaker_bigrams_selectedcands %>%
 speaker_tfidf_chart_bigrams 
 
 #save chart images to file
-ggsave("img/speaker_tfidf_chart_bigrams.jpg", speaker_tfidf_chart_bigrams)
-ggsave("img/speaker_tfidf_chart_bigrams.pdf", speaker_tfidf_chart_bigrams)
+ggsave("img/detroit1_speaker_tfidf_chart_bigrams.jpg", speaker_tfidf_chart_bigrams)
+ggsave("img/detroit1_speaker_tfidf_chart_bigrams.pdf", speaker_tfidf_chart_bigrams)
