@@ -1,5 +1,8 @@
 ### DOING TF-IDF ANALYSIS OF DEMOCRATIC DEBATE ####
 
+# notes on using tidytext's reorder_within():
+# https://juliasilge.com/blog/reorder-within/
+
 # libraries ---------------------------------------------------------------
 library(tidyverse)
 library(ggpage)
@@ -64,7 +67,7 @@ speaker_words <- speaker_words %>%
 
 speaker_words
 
-# Notice that idf and thus tf-idf are zero for these extremely common words, so the idf term (which will then be the
+# idf and thus tf-idf are zero for these extremely common words, so the idf term (which will then be the
 # natural log of 1) is zero. The inverse document frequency (and thus tf-idf) is very low (near zero) for words that 
 # occur in many of the documents in a collection; this is how this approach decreases the weight for common words. 
 # The inverse document frequency will be a higher number for words that occur in fewer of the documents in the 
@@ -80,22 +83,39 @@ speaker_words_selectedcands <- speaker_words %>%
 
 #visualizing 
 speaker_tfidf_chart <- speaker_words_selectedcands %>%
-  arrange(desc(tf_idf)) %>%
-  mutate(word = factor(word, levels = rev(unique(word)))) %>% 
-  group_by(speaker) %>% 
-  top_n(10) %>% 
-  slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
-  ungroup() %>%
+  group_by(speaker) %>%
+  top_n(15) %>%
+  slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
+  ungroup %>%
+  mutate(speaker = as.factor(speaker),
+         word = reorder_within(word, tf_idf, speaker)) %>% #use the new reorder_within() func
   ggplot(aes(word, tf_idf, fill = speaker)) +
   geom_col(show.legend = FALSE) +
   labs(x = NULL, y = "tf-idf") +
   facet_wrap(~speaker, ncol = 2, scales = "free") +
-  coord_flip()
+  coord_flip() +
+  scale_x_reordered() # +
+  # scale_y_continuous(expand = c(0,0))
+
+#OLD version
+# speaker_tfidf_chart <- speaker_words_selectedcands %>%
+#   arrange(desc(tf_idf)) %>%
+#   mutate(word = factor(word, levels = rev(unique(word)))) %>% 
+#   group_by(speaker) %>% 
+#   top_n(10) %>% 
+#   slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
+#   ungroup() %>%
+#   ggplot(aes(word, tf_idf, fill = speaker)) +
+#   geom_col(show.legend = FALSE) +
+#   labs(x = NULL, y = "tf-idf") +
+#   facet_wrap(~speaker, ncol = 2, scales = "free") +
+#   coord_flip()
 
 speaker_tfidf_chart 
 
 ggsave("img/speaker_tfidf_chart.jpg", speaker_tfidf_chart)
 ggsave("img/speaker_tfidf_chart.pdf", speaker_tfidf_chart)
+
 
 
 
@@ -147,29 +167,26 @@ speaker_bigrams %>%
   select(-total) %>%
   arrange(desc(tf_idf)) 
 
-#visualizing 
-speaker_tfidf_top <- speaker_bigrams %>%
-  arrange(desc(tf_idf)) %>%
-  mutate(bigram = factor(bigram, levels = rev(unique(bigram)))) %>% 
-  group_by(speaker) %>% 
-  top_n(10) %>% 
-  slice(1:10) %>% #added SLICE to limit to 10 records per cand, even with ties 
-  ungroup() 
-
-#check count per speaker
-speaker_tfidf_top %>% 
-  count(speaker)
-
 #limit number of candidates
-speaker_tfidf_top <- speaker_tfidf_top %>% 
+speaker_bigrams_selectedcands <- speaker_bigrams %>% 
   filter(speaker %in% mycands)
 
-speaker_tfidf_chart_bigrams <- speaker_tfidf_top %>% 
+
+#visualizing bi-grams ####
+speaker_tfidf_chart_bigrams <- speaker_bigrams_selectedcands %>%
+  group_by(speaker) %>%
+  top_n(10) %>%
+  slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
+  ungroup %>%
+  mutate(speaker = as.factor(speaker),
+         bigram = reorder_within(bigram, tf_idf, speaker)) %>% #use the new reorder_within() func
   ggplot(aes(bigram, tf_idf, fill = speaker)) +
   geom_col(show.legend = FALSE) +
   labs(x = NULL, y = "tf-idf") +
   facet_wrap(~speaker, ncol = 2, scales = "free") +
-  coord_flip() 
+  coord_flip() +
+  scale_x_reordered() # +
+# scale_y_continuous(expand = c(0,0))
 
 speaker_tfidf_chart_bigrams 
 
