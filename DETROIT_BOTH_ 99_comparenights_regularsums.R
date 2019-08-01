@@ -123,3 +123,25 @@ top_bigrams_per_speaker <- speaker_bigrams %>%
 
 #save to file
 write_csv(top_bigrams_per_speaker, "output/detroit_nightvsnight_top_bigrams.csv")
+
+
+
+
+### night vs night comparision of certain words ##### -----------------------
+
+
+speaker_words %>% 
+  filter(word %in% c("impeach","impeachment"))
+
+speaker_words %>% 
+  filter(word %in% c("russia","russian", "putin"))
+
+speaker_words %>% 
+  filter(word %in% c("climate", "environment"))
+
+speaker_words %>% 
+  filter(word %in% c("medicare", "health", "insurance"))
+
+
+
+
