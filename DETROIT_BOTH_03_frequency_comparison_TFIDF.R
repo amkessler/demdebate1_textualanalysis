@@ -1,4 +1,4 @@
-### DOING TEXT ANALYSIS OF CNN DEMOCRATIC DEBATE ####
+### DOING TF-IDF ANALYSIS OF CNN DEMOCRATIC DEBATE ####
 
 # libraries ---------------------------------------------------------------
 library(tidyverse)
@@ -12,12 +12,14 @@ library(plotly)
 detroit_text <- read_csv("data/detroit_COMBINED_text.csv")
 
 selectedcols <- detroit_text %>%
-  select(night, speaker, text)
+  select(speaker, text)
 
 
 #list the individual speakers
 selectedcols %>% 
   count(speaker)
+
+
 
 
 #exclude moderators
@@ -39,14 +41,14 @@ selectedcols <- selectedcols %>%
 
 
 
-#begin the text analysis for NIGHTLY words---------------------------------------------
+#begin the text analysis ---------------------------------------------
 
 speaker_words <- selectedcols %>%
   unnest_tokens(word, text) %>%
-  count(night, word, sort = TRUE)
+  count(speaker, word, sort = TRUE)
 
 total_words <- speaker_words %>% 
-  group_by(night) %>% 
+  group_by(speaker) %>% 
   summarize(total = sum(n))
 
 speaker_words <- left_join(speaker_words, total_words)
@@ -61,30 +63,45 @@ speaker_words <- speaker_words %>%
   filter(!str_detect(word, "[0-9]")) # remove numbers
 
 
-#pull top ones for each night into table
-top_word_per_speaker <- speaker_words %>%
-  select(-total) %>% 
-  group_by(night) %>%
+
+### NOW WE'LL DO THE TF-IDF ---------------------------------------------
+
+speaker_words <- speaker_words %>%
+  bind_tf_idf(word, speaker, n)
+
+speaker_words
+
+# idf and thus tf-idf are zero for these extremely common words, so the idf term (which will then be the
+# natural log of 1) is zero. The inverse document frequency (and thus tf-idf) is very low (near zero) for words that 
+# occur in many of the documents in a collection; this is how this approach decreases the weight for common words. 
+# The inverse document frequency will be a higher number for words that occur in fewer of the documents in the 
+# collection.
+
+speaker_words %>%
+  select(-total) %>%
+  arrange(desc(tf_idf))
+
+
+#pull top ones for each speaker into table
+top_tfidf_per_speaker <- speaker_words %>%
+  group_by(speaker) %>%
   top_n(15) %>%
   slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
   ungroup
 
 #save to file
-write_csv(top_word_per_speaker, "output/detroit_nightvsnight_top_singlewords.csv")
+write_csv(top_tfidf_per_speaker, "output/detroit_combined_tfidf_singleword_percandidate.csv")
 
-
-speaker_words %>% 
-  filter(word == "trump")
 
 
 ### NOW BI-GRAMS VERSION -------------------------------
 
 speaker_bigrams <- selectedcols %>%
   unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
-  count(night, bigram, sort = TRUE)
+  count(speaker, bigram, sort = TRUE)
 
 total_words <- speaker_bigrams %>% 
-  group_by(night) %>% 
+  group_by(speaker) %>% 
   summarize(total = sum(n))
 
 speaker_bigrams <- left_join(speaker_bigrams, total_words)
@@ -103,7 +120,7 @@ bigrams_filtered <- bigrams_separated %>%
 
 # new bigram counts:
 bigram_counts <- bigrams_filtered %>% 
-  count(night, word1, word2, sort = TRUE)
+  count(speaker, word1, word2, sort = TRUE)
 
 bigrams_united <- bigrams_filtered %>%
   unite(bigram, word1, word2, sep = " ")
@@ -114,59 +131,29 @@ bigrams_united
 speaker_bigrams <- bigrams_united
 
 
+# TF-IDF #### ---
+
+speaker_bigrams_tfidf <- speaker_bigrams %>%
+  bind_tf_idf(bigram, speaker, n)
+
+speaker_bigrams_tfidf
+
+speaker_bigrams_tfidf %>%
+  select(-total) %>%
+  arrange(desc(tf_idf)) 
+
+#limit number of candidates
+# speaker_bigrams_selectedcands <- speaker_bigrams_tfidf %>% 
+#   filter(speaker %in% mycands)
+
 #pull top ones for each speaker into table
-top_bigrams_per_speaker <- speaker_bigrams %>%
-  group_by(night) %>%
+top_tfidf_per_speaker_bigrams <- speaker_bigrams_tfidf %>%
+  group_by(speaker) %>%
   top_n(15) %>%
   slice(1:10) %>% #added to limit to 10 records per cand, even with ties 
   ungroup
 
 #save to file
-write_csv(top_bigrams_per_speaker, "output/detroit_nightvsnight_top_bigrams.csv")
-
-
-
-
-### night vs night comparision of certain words ##### -----------------------
-
-speaker_words %>% 
-  select(-total) %>% 
-  filter(word %in% c("impeach","impeachment")) %>% 
-  arrange(word, night)
-
-
-
-speaker_words %>% 
-  select(-total) %>% 
-  filter(word %in% c("economy", "economic")) %>% 
-  arrange(word, night)
-
-
-speaker_words %>% 
-  filter(word %in% c("russia","russian", "putin"))
-
-speaker_words %>% 
-  filter(word %in% c("climate", "environment"))
-
-speaker_words %>% 
-  filter(word %in% c("medicare", "health", "insurance"))
-
-speaker_words %>% 
-  filter(word %in% c("abortion", "reproductive", "reproduction"))
-
-speaker_words %>% 
-  select(-total) %>% 
-  filter(word %in% c("trump")) %>% 
-  arrange(word, night)
-
-speaker_words %>% 
-  select(-total) %>% 
-  filter(word %in% c("war", "military", "overseas", "iraq", "afghanistan")) %>% 
-  arrange(word, night)
-
-
-
-
-
+write_csv(top_tfidf_per_speaker_bigrams, "output/detroit_combined_tfidf_bigrams_percandidate.csv")
 
 
