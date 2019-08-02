@@ -53,7 +53,15 @@ total_words <- speaker_words %>%
 
 speaker_words <- left_join(speaker_words, total_words)
 
-speaker_words
+speaker_words %>% 
+  head(20)
+
+speaker_words %>% 
+  select(speaker, word, n) %>% 
+  group_by(speaker) %>% 
+  top_n(10)
+
+
 
 # remove stop words
 data(stop_words)
