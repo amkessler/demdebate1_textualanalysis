@@ -1,6 +1,5 @@
-### DOING TF-IDF ANALYSIS OF CNN DEMOCRATIC DEBATE ####
+### DOING TF-IDF ANALYSIS OF CNN DEMOCRATIC DEBATES ####
 
-# libraries ---------------------------------------------------------------
 library(tidyverse)
 library(ggpage)
 library(tidytext)
@@ -8,7 +7,7 @@ library(stringr)
 library(plotly)
 
 
-# read in transcript ---------------------------------------------
+# read in combined transcript of both debates -------
 detroit_text <- read_csv("data/detroit_COMBINED_text.csv")
 
 selectedcols <- detroit_text %>%
@@ -18,8 +17,6 @@ selectedcols <- detroit_text %>%
 #list the individual speakers
 selectedcols %>% 
   count(speaker)
-
-
 
 
 #exclude moderators
@@ -62,7 +59,6 @@ speaker_words %>%
   top_n(10)
 
 
-
 # remove stop words
 data(stop_words)
 
@@ -72,7 +68,7 @@ speaker_words <- speaker_words %>%
 
 
 
-### NOW WE'LL DO THE TF-IDF ---------------------------------------------
+### NOW WE'LL DO THE TF-IDF -------------
 
 speaker_words <- speaker_words %>%
   bind_tf_idf(word, speaker, n)
@@ -163,5 +159,7 @@ top_tfidf_per_speaker_bigrams <- speaker_bigrams_tfidf %>%
 
 #save to file
 write_csv(top_tfidf_per_speaker_bigrams, "output/detroit_combined_tfidf_bigrams_percandidate.csv")
+
+
 
 
