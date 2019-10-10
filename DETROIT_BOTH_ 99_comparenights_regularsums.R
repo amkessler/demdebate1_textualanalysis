@@ -17,7 +17,7 @@ selectedcols <- detroit_text %>%
 
 #list the individual speakers
 selectedcols %>% 
-  count(speaker) #
+  count(speaker) ##
 
 
 #exclude moderators
